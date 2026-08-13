@@ -1,24 +1,22 @@
 FROM node:20-bookworm-slim AS builder
-
 WORKDIR /app
-
 COPY package*.json ./
 RUN npm ci
-
 COPY . .
-
 RUN npx prisma generate
 RUN npm run build
 
 FROM node:20-bookworm-slim AS runner
-
 WORKDIR /app
-
 ENV NODE_ENV=production
 
 COPY package*.json ./
 RUN npm ci --omit=dev
 RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+
+# Копируем Prisma Client из builder
+COPY --from=builder /app/node_modules/.prisma /app/node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma /app/node_modules/@prisma
 
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
