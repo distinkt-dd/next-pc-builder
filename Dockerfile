@@ -3,7 +3,7 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
-RUN npx prisma generate
+RUN npx prisma generate   # генерирует в src/generated/prisma
 RUN npm run build
 
 FROM node:20-bookworm-slim AS runner
@@ -14,14 +14,12 @@ COPY package*.json ./
 RUN npm ci --omit=dev
 RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
-# Копируем Prisma Client из builder
-COPY --from=builder /app/node_modules/.prisma /app/node_modules/.prisma
-COPY --from=builder /app/node_modules/@prisma /app/node_modules/@prisma
-
+# Копируем сборку
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
+# Копируем сгенерированный клиент
 COPY --from=builder /app/src/generated ./src/generated
 COPY --from=builder /app/next.config.ts ./next.config.ts
 
