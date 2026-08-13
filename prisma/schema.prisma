@@ -1,0 +1,100 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id       String  @id @default(cuid())
+  email    String  @unique
+  name     String?
+  password String
+
+  builds Build[]
+  likes  Like[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model Component {
+  id    String        @id @default(cuid())
+  type  ComponentType
+  name  String
+  price Int
+
+  socket String?
+
+  buildComponents BuildComponent[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("components")
+}
+
+model Build {
+  id         String @id @default(cuid())
+  name       String
+  totalPrice Int    @default(0) @map("total_price")
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  components BuildComponent[]
+
+  isPublic Boolean @default(false) @map("is_public")
+  likes    Like[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("builds")
+}
+
+model BuildComponent {
+  id      String @id @default(cuid())
+  buildId String @map("build_id")
+  build   Build  @relation(fields: [buildId], references: [id], onDelete: Cascade)
+
+  componentId String    @map("component_id")
+  component   Component @relation(fields: [componentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([buildId, componentId])
+  @@map("build_components")
+}
+
+model Like {
+  id      String @id @default(cuid())
+  userId  String @map("user_id")
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  buildId String @map("build_id")
+  build   Build  @relation(fields: [buildId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, buildId])
+  @@map("likes")
+}
+
+enum ComponentType {
+  cpu
+  gpu
+  ram
+  ssd
+  motherboard
+  psu
+  case
+  cooler
+}
