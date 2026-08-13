@@ -10,6 +10,11 @@ services:
       - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/postgres_data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - app-net
 
@@ -21,16 +26,12 @@ services:
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
     depends_on:
       postgres:
-        condition: service_healthy
-    healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}']
-      interval: 5s
-      timeout: 5s
-      retries: 10
+        condition: service_healthy # теперь у postgres есть healthcheck
     ports:
       - '5050:80'
     networks:
       - app-net
+
   app:
     build:
       context: .
@@ -42,12 +43,16 @@ services:
       NODE_ENV: production
       DATABASE_URL: ${DATABASE_URL}
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
-      NEXTAUTH_URL: ${NEXTAUTH_URL:-http:localhost:3000}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
       RUN_SEED_ON_START: ${RUN_SEED_ON_START:-true}
     ports:
       - '3000:3000'
+    networks:
+      - app-net
+
 networks:
   app-net:
     driver: bridge
+
 volumes:
   postgres_data:
